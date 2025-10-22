@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HydroHome: Water Saving Assistant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      margin: 0;
+      padding-bottom: 70px;
+    }
+    header {
+      background: #0077b6;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.4em; margin: 0; }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #023e8a;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 0;
+      z-index: 1000;
+      border-top: 3px solid #0077b6;
+    }
+    nav button {
+      background: none;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 0.9em;
+      cursor: pointer;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    nav button:hover { text-decoration: underline; }
+    nav button span.icon { font-size: 1.2em; margin-bottom: 3px; }
+
+    .container { max-width: 1000px; margin: 10px auto; padding: 10px; }
+    .card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+      word-wrap: break-word;
+    }
+    .card h2 { margin-bottom: 12px; color: #0077b6; font-size: 1.2em; }
+
+    .gauge { width: 100%; height: 150px; }
+    .alert {
+      background: #ff4d6d;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .progress-bar {
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 20px;
+      margin: 10px 0;
+    }
+    .progress {
+      height: 100%;
+      text-align: center;
+      color: white;
+      line-height: 20px;
+    }
+
+    ul { list-style: none; padding: 0; }
+    ul li {
+      margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .appliance-btn {
+      background: #0077b6;
+      color: white;
+      border: none;
+      padding: 5px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 5px;
+      font-size: 0.9em;
+    }
+    .appliance-btn:hover { background: #005f8d; }
+
+    canvas { max-width: 100%; height: auto !important; }
+    .tab { display: none; }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.2em; }
+      nav button { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HydroHome: Your Water Saving Assistant</h1>
+  </header>
+
+  <div class="container">
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab">
+      <div class="card">
+        <h2>Real-Time Water Usage</h2>
+        <canvas id="waterGauge" class="gauge"></canvas>
+        <p>Current Flow: <span id="currentFlow">0</span> L/min</p>
+      </div>
+      <div class="card">
+        <h2>Leak Detection Alerts</h2>
+        <div id="alertBox" class="alert">Leak Detected! 🚨</div>
+        <p>Last Checked: <span id="lastChecked">--:--:--</span></p>
+      </div>
+    </div>
+
+    <!-- Usage Tab -->
+    <div id="usage" class="tab">
+      <div class="card">
+        <h2>Weekly Water Usage</h2>
+        <canvas id="weeklyChart"></canvas>
+      </div>
+      <div class="card">
+        <h2>Monthly Water Usage</h2>
+        <canvas id="monthlyChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Appliances Tab -->
+    <div id="appliances" class="tab">
+      <div class="card">
+        <h2>Appliance Efficiency</h2>
+        <ul id="applianceList"></ul>
+      </div>
+    </div>
+
+    <!-- Goals Tab -->
+    <div id="goals" class="tab">
+      <div class="card">
+        <h2>Weekly Water Saving Goal</h2>
+        <div class="progress-bar">
+          <div id="goalProgress" class="progress" style="width:0%;background:#0077b6">0%</div>
+        </div>
+        <p>You have saved <span id="waterSaved">0</span> L this week!</p>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settings" class="tab">
+      <div class="card">
+        <h2>User Profile</h2>
+        <p>Name: Chezca Alcantara</p>
+        <p>Home Size: 120 sqm</p>
+        <p>Occupants: 1</p>
+      </div>
+      <div class="card">
+        <h2>Notification Settings</h2>
+        <p><input type="checkbox" checked /> Leak Alerts</p>
+        <p><input type="checkbox" /> Weekly Summary</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fixed Bottom Navigation Bar -->
+  <nav>
+    <button onclick="showTab('dashboard')"><span class="icon">🏠</span>Home</button>
+    <button onclick="showTab('usage')"><span class="icon">📊</span>Usage</button>
+    <button onclick="showTab('appliances')"><span class="icon">💧</span>Appliances</button>
+    <button onclick="showTab('goals')"><span class="icon">🎯</span>Goals</button>
+    <button onclick="showTab('settings')"><span class="icon">⚙️</span>Settings</button>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Tab Navigation
+    function showTab(tabId){
+      document.querySelectorAll(".tab").forEach(t=>t.style.display="none");
+      const tab=document.getElementById(tabId);
+      tab.style.display="block";
+      if(tabId==="usage") initCharts();
+      if(tabId==="appliances") showAppliances();
+    }
+    showTab("dashboard"); // Show dashboard initially
+
+    // Gauge
+    const canvas=document.getElementById("waterGauge");
+    const ctx=canvas.getContext("2d");
+    canvas.width=canvas.offsetWidth;
+    canvas.height=canvas.offsetHeight;
+
+    function drawGauge(value){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const centerX=canvas.width/2;
+      const centerY=canvas.height/1.2;
+      const radius=60;
+      const startAngle=Math.PI;
+      const endAngle=2*Math.PI;
+
+      ctx.beginPath();
+      ctx.arc(centerX,centerY,radius,startAngle,endAngle);
+      ctx.lineWidth=15;
+      ctx.strokeStyle="#e0e0e0";
+      ctx.stroke();
+
+      const angle=startAngle+(value/100)*Math.PI;
+      ctx.beginPath();
+      ctx.arc(centerX,centerY,radius,startAngle,angle);
+      ctx.lineWidth=15;
+      ctx.strokeStyle="#0077b6";
+      ctx.stroke();
+
+      ctx.font="20px Arial";
+      ctx.fillStyle="#0077b6";
+      ctx.textAlign="center";
+      ctx.fillText(value+" L/min",centerX,centerY-10);
+    }
+
+    // Dashboard Simulation
+    function updateDashboard(){
+      const currentFlow=Math.floor(Math.random()*100);
+      document.getElementById("currentFlow").innerText=currentFlow;
+      drawGauge(currentFlow);
+
+      document.getElementById("alertBox").style.display=currentFlow>80?"block":"none";
+      document.getElementById("lastChecked").innerText=new Date().toLocaleTimeString();
+
+      const goal=1000;
+      const saved=Math.min(Math.floor(Math.random()*goal),goal);
+      document.getElementById("waterSaved").innerText=saved;
+      document.getElementById("goalProgress").style.width=(saved/goal)*100+"%";
+      document.getElementById("goalProgress").innerText=Math.floor((saved/goal)*100)+"%";
+    }
+    setInterval(updateDashboard,2000);
+
+    // Charts
+    let weeklyChartObj, monthlyChartObj;
+    function initCharts(){
+      if(!weeklyChartObj){
+        const weeklyCtx=document.getElementById("weeklyChart").getContext("2d");
+        weeklyChartObj=new Chart(weeklyCtx,{
+          type:"line",
+          data:{
+            labels:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],
+            datasets:[{
+              label:"Liters Used",
+              data:[80,90,75,100,60,120,95],
+              borderColor:"#0077b6",
+              backgroundColor:"rgba(0,119,182,0.2)",
+              fill:true
+            }]
+          }
+        });
+      }
+      if(!monthlyChartObj){
+        const monthlyCtx=document.getElementById("monthlyChart").getContext("2d");
+        monthlyChartObj=new Chart(monthlyCtx,{
+          type:"bar",
+          data:{
+            labels:["Week 1","Week 2","Week 3","Week 4"],
+            datasets:[{label:"Liters Used",data:[550,620,580,610],backgroundColor:"#0077b6"}]
+          }
+        });
+      }
+    }
+
+    // Appliances
+    const appliances=[
+      {name:"Washer",efficiency:85},
+      {name:"Dishwasher",efficiency:70},
+      {name:"Toilet",efficiency:55},
+      {name:"Shower",efficiency:90}
+    ];
+    function showAppliances(){
+      const list=document.getElementById("applianceList"); list.innerHTML="";
+      appliances.forEach(app=>{
+        const li=document.createElement("li");
+        const color=app.efficiency>=80?"green":app.efficiency>=60?"orange":"red";
+        li.innerHTML=`${app.name} <span style="color:${color};">${app.efficiency}%</span>`;
+        const btn=document.createElement("button");
+        btn.innerText="Check"; btn.className="appliance-btn";
+        btn.onclick=()=>alert(`${app.name} efficiency is ${app.efficiency}%. ${app.efficiency<60?"Consider maintenance or replacement.":"All good!"}`);
+        li.appendChild(btn); list.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
